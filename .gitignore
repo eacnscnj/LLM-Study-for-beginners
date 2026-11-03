@@ -1,0 +1,6 @@
+.tools/
+research/
+qa/
+*.tar.gz
+__pycache__/
+.sites-runtime/
