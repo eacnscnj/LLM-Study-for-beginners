@@ -3,29 +3,29 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#153d38">
+  <meta name="theme-color" content="#245e4f">
   <meta name="description" content="从用途、结构、训练到 RAG 和 Agent，以中文交互实验理解大语言模型。基于 A Survey of Large Language Models v19，并补充近期研究。">
   <title>大模型认知地图 · 从概念到理解</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%23153d38'/%3E%3Cpath d='M17 18v28h28M29 18v16h16' fill='none' stroke='%23e3ef9a' stroke-width='7'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
   <script src="content.js" defer></script>
+  <script src="guides.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">跳到正文</a>
   <button id="shade" class="shade" aria-label="关闭目录" hidden></button>
   <aside id="sidebar" class="sidebar" aria-label="学习目录">
-    <a class="brand" href="#start"><span class="brand-mark" aria-hidden="true">⌘</span><span>大模型认知地图<small>LLM ATLAS / 中文交互导读</small></span></a>
-    <div class="course-label">从一个问题，走向一张地图。</div>
+    <a class="brand" href="#start"><svg class="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M5 6h9a4 4 0 0 1 4 4v17a6 6 0 0 0-5-3H5V6Zm13 4a4 4 0 0 1 4-4h5v18h-5a4 4 0 0 0-4 3" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg><span>大模型认知地图<small>一份可以动手探索的学习笔记</small></span></a>
     <nav id="nav"></nav>
-    <div class="progress-box"><div><span>我的学习进度</span><b id="progress-text">0 / 10</b></div><progress id="progress" max="10" value="0" aria-label="学习进度"></progress><small>理解后手动标记，按自己的节奏学。</small></div>
-    <a class="source-link" href="#sources">↗ 资料来源与说明</a>
-    <span class="sidebar-date">资料核对 · 2026.11.03</span>
+    <div class="sidebar-resources"><a id="guides-nav" class="nav-extra" href="#guides">学习导览与推荐</a><a class="source-link" href="#sources">资料来源与说明</a></div>
+    <div class="progress-box"><div><span>已理解的章节</span><b id="progress-text">0 / 10</b></div><progress id="progress" max="10" value="0" aria-label="学习进度"></progress><small>理解后手动标记。</small></div>
+    <span class="sidebar-date">资料核对：2026.11.03</span>
   </aside>
   <div class="workspace">
-    <header class="topbar"><div class="crumb"><button id="menu" class="icon-button" aria-label="打开学习目录" aria-controls="sidebar" aria-expanded="false">☰</button><span>认知地图</span><span class="crumb-slash">/</span><span id="crumb-title">建立直觉</span></div><div class="top-actions"><a href="#glossary">⌕ 查术语</a><button id="print" class="quiet">打印本章 ↗</button></div></header>
+    <header class="topbar"><div class="crumb"><button id="menu" class="icon-button" aria-label="打开学习目录" aria-controls="sidebar" aria-expanded="false"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button><span>认知地图</span><span class="crumb-slash">/</span><span id="crumb-title">建立直觉</span></div><div class="top-actions"><a href="#guides">学习导览</a><a href="#glossary">查术语</a><button id="print" class="quiet">打印本章</button></div></header>
     <main id="main" tabindex="-1"></main>
-    <footer class="page-footer"><span>理解一个概念，也理解它为什么出现。</span><a href="#sources">来源、版本与实验边界 ↗</a></footer>
+    <footer class="page-footer"><span>依据 A Survey of Large Language Models v19</span><a href="#sources">来源、版本与实验边界</a></footer>
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <noscript><p>本网页的交互讲解需要启用 JavaScript。所有实验均在浏览器本地进行。</p></noscript>

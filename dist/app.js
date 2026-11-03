@@ -31,6 +31,9 @@
     $('#progress-text').textContent=`${done.size} / ${ids.length}`;
     $('#progress').max=ids.length;
     $('#progress').value=done.size;
+    $('#guides-nav').classList.toggle('active', current==='guides');
+    if(current==='guides')$('#guides-nav').setAttribute('aria-current','page');
+    else $('#guides-nav').removeAttribute('aria-current');
   }
   function closeMenu() {
     $('#sidebar').classList.remove('open');
@@ -38,17 +41,39 @@
     $('#menu').setAttribute('aria-expanded','false');
   }
   function render(first=false) {
+    clearTimeout(toastTimer);
+    $('#toast').classList.remove('visible');
     const requested=location.hash.slice(1);
-    current=ids.includes(requested)||requested==='sources'?requested:'start';
+    current=ids.includes(requested)||['sources','guides'].includes(requested)?requested:'start';
     const chapter=C.chapters.find(c=>c.id===current);
     const index=ids.indexOf(current);
-    $('#crumb-title').textContent=chapter?chapter.title:'资料来源与说明';
-    document.title=`${chapter?chapter.title:'资料来源与说明'} · 大模型认知地图`;
-    $('#main').innerHTML=chapter?`${chapter.id==='start'?'':`<div class="chapter-eyebrow"><span class="dot"></span>${chapter.eyebrow}<span class="tag">${chapter.group}</span></div>`}${chapter.html()}<div class="chapter-bottom"><button id="mark-done" class="button ${done.has(current)?'secondary':'light'}" aria-pressed="${done.has(current)}">${done.has(current)?'✓ 已理解本章':'○ 我已理解本章'}</button><div class="pager">${index>0?`<a class="button light" href="#${ids[index-1]}">← 上一章</a>`:''}${index<ids.length-1?`<a class="button" href="#${ids[index+1]}">下一章 →</a>`:'<a class="button" href="#start">回到起点 ↗</a>'}</div></div>`:C.sources();
+    const title=chapter?chapter.title:current==='guides'?'学习导览与推荐':'资料来源与说明';
+    $('#crumb-title').textContent=title;
+    document.title=`${title} · 大模型认知地图`;
+    const body=chapter?`${chapter.html()}<div class="chapter-bottom"><button id="mark-done" class="button ${done.has(current)?'secondary':'light'}" aria-pressed="${done.has(current)}">${done.has(current)?'已理解本章':'标记为已理解'}</button><div class="pager">${index>0?`<a class="button light" href="#${ids[index-1]}">上一章</a>`:''}${index<ids.length-1?`<a class="button" href="#${ids[index+1]}">下一章</a>`:'<a class="button" href="#guides">继续学习</a>'}</div></div>`:current==='guides'?window.STUDY_GUIDES.html():C.sources();
+    $('#main').innerHTML=`<div class="reading-layout"><article class="chapter-content">${body}</article><nav class="chapter-outline" aria-label="本页内容"></nav></div>`;
+    $('#main').dataset.page=current;
+    $$('.chapter-content h1 br').forEach(br=>br.replaceWith(document.createTextNode('')));
     drawNav();
     closeMenu();
     bindChapter();
+    buildOutline();
     if(!first){window.scrollTo({top:0,behavior:'auto'});$('#main').focus({preventScroll:true});}
+  }
+  function buildOutline() {
+    const headings=$$('h2, .experiment-head h3', $('.chapter-content'));
+    const outline=$('.chapter-outline');
+    if(!headings.length){outline.hidden=true;return;}
+    outline.innerHTML='<strong>本页内容</strong>'+headings.map((heading,i)=>{
+      heading.id=`${current}-section-${i}`;
+      return `<button type="button" data-section="${i}">${escape(heading.textContent)}</button>`;
+    }).join('');
+    $$('[data-section]',outline).forEach(button=>button.addEventListener('click',()=>{
+      const heading=headings[Number(button.dataset.section)];
+      heading.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});
+      heading.setAttribute('tabindex','-1');
+      heading.focus({preventScroll:true});
+    }));
   }
   function bindChapter() {
     const mark=$('#mark-done');
@@ -56,7 +81,7 @@
       if(done.has(current)){done.delete(current);toast('已取消本章标记。');}
       else {done.add(current);toast('已标记。遇到问题时，随时回来。');}
       saveProgress();
-      mark.textContent=done.has(current)?'✓ 已理解本章':'○ 我已理解本章';
+      mark.textContent=done.has(current)?'已理解本章':'标记为已理解';
       mark.className=`button ${done.has(current)?'secondary':'light'}`;
       mark.setAttribute('aria-pressed',String(done.has(current)));
     });
@@ -71,12 +96,14 @@
       }));
     });
     if(current==='purpose')bindTasks();
+    if(current==='start')bindSampling();
     if(current==='anatomy')bindLayers();
     if(current==='mechanism'){bindAttention();bindSampling();}
     if(current==='training'){bindStages();bindTraining();}
     if(current==='solutions')bindScenarios();
     if(current==='evaluation')bindAttempts();
     if(current==='glossary')bindGlossary();
+    if(current==='guides')bindGuides();
     if(current==='sources')$('#clear-progress').addEventListener('click',()=>{done.clear();saveProgress();toast('学习标记已清除。');});
   }
   function bindTasks() {
@@ -89,10 +116,25 @@
     draw(0);
   }
   function bindLayers() {
+    $('#layer-stack').classList.add('desktop-layers');
+    $('#layer-detail').classList.add('desktop-layers');
+    const panelHTML=index=>{
+      const [title,subtitle,what,why,shape]=C.layers[index];
+      return `<h3>${title}</h3><p>${what}</p><p class="why">${why}</p><div class="formula">${shape}</div><small>B：批大小 · T：序列长度 · d：隐藏维度 · V：词表大小</small>`;
+    };
+    const layout=$('#layer-stack').parentElement;
+    C.layers.forEach((layer,i)=>{
+      const details=document.createElement('details');
+      details.className='mobile-layer-details';
+      details.name='model-layer-details';
+      details.dataset.mobileLayer=i;
+      details.open=i===0;
+      details.innerHTML=`<summary>${layer[0]}</summary><div class="detail-panel">${panelHTML(i)}</div>`;
+      layout.append(details);
+    });
     const draw=index=>{
       $('#layer-stack').innerHTML=C.layers.map((l,i)=>`<button data-layer="${i}" class="layer ${index===i?'active':''}" aria-pressed="${index===i}">${String(i+1).padStart(2,'0')}　${l[0]}<span>↗</span></button>`).join('');
-      const [title,subtitle,what,why,shape]=C.layers[index];
-      $('#layer-detail').innerHTML=`<span class="small-label">${subtitle}</span><h3>${title}</h3><p>${what}</p><p class="why">${why}</p><div class="formula">${shape}</div><small>B：批大小 · T：序列长度 · d：隐藏维度 · V：词表大小</small>`;
+      $('#layer-detail').innerHTML=panelHTML(index);
       $$('[data-layer]').forEach(button=>button.addEventListener('click',()=>draw(Number(button.dataset.layer))));
     };
     draw(0);
@@ -209,6 +251,29 @@
     };
     $('#glossary-search').addEventListener('input',draw);
     draw();
+  }
+  function bindGuides() {
+    const G=window.STUDY_GUIDES;
+    let selectedPath=G.paths[0];
+    const external=(url,label)=>`<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+    const renderResources=()=>{
+      const query=$('#guide-search').value.trim().toLocaleLowerCase();
+      const category=$('#guide-category').value;
+      const matches=G.resources.filter(g=>(category==='all'||g.category===category)&&[g.name,g.language,g.categoryName,g.reason,g.prerequisites,g.reading,g.fit].join(' ').toLocaleLowerCase().includes(query));
+      const rank=id=>selectedPath.sequence.includes(id)?selectedPath.sequence.indexOf(id):99;
+      matches.sort((a,b)=>rank(a.id)-rank(b.id));
+      $('#guide-count').textContent=`显示 ${matches.length} / ${G.resources.length} 份资料；当前路线中的资料优先排列。`;
+      $('#guide-list').innerHTML=matches.length?matches.map(g=>`<article class="guide-item" id="guide-${g.id}" data-guide-id="${g.id}"><div class="guide-name"><h3>${external(g.url,g.name)}</h3><p>${g.language} · ${g.categoryName}</p><div class="guide-links">${external(g.url,'打开资料')}${g.repository&&g.repository!==g.url?external(g.repository,'项目仓库'):''}</div></div><div><p class="guide-reason">${g.reason}</p><dl><div><dt>适合谁</dt><dd>${g.fit}</dd></div><div><dt>前置知识</dt><dd>${g.prerequisites}</dd></div><div><dt>推荐读法</dt><dd>${g.reading}</dd></div></dl></div></article>`).join(''):'<p class="empty" role="status">没有匹配的资料。试试中文名、英文名，或将筛选切换为“全部资源”。</p>';
+    };
+    const renderPath=()=>{
+      $('#guide-paths').innerHTML=G.paths.map(path=>`<button type="button" data-guide-path="${path.id}" aria-pressed="${path.id===selectedPath.id}" class="${path.id===selectedPath.id?'active':''}">${path.name}</button>`).join('');
+      $('#guide-route').innerHTML=`<h3>${selectedPath.title}</h3><p>${selectedPath.description}</p><div class="route-sequence">${selectedPath.sequence.map((id,i)=>{const g=G.resources.find(item=>item.id===id);return `${i?'<span aria-hidden="true">→</span>':''}${external(g.url,g.name)}`;}).join('')}</div>`;
+      $$('[data-guide-path]').forEach(button=>button.addEventListener('click',()=>{selectedPath=G.paths.find(path=>path.id===button.dataset.guidePath);renderPath();renderResources();}));
+    };
+    $('#guide-search').addEventListener('input',renderResources);
+    $('#guide-category').addEventListener('change',renderResources);
+    renderPath();
+    renderResources();
   }
   $('#menu').addEventListener('click',()=>{
     const open=!$('#sidebar').classList.contains('open');
